@@ -1,0 +1,81 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  --background: 240 7% 4%;
+  --foreground: 240 10% 96%;
+  --card: 240 6% 10%;
+  --primary: 276 88% 63%;
+  --primary-foreground: 0 0% 100%;
+  --accent: 186 82% 50%;
+  --secondary: 240 5% 15%;
+  --muted: 240 5% 15%;
+  --muted-foreground: 240 5% 57%;
+  --border: 240 5% 23%;
+  --input: 240 5% 13%;
+  --ring: 276 88% 63%;
+  --positive: 151 65% 45%;
+  --negative: 0 72% 58%;
+  --warning: 38 92% 55%;
+  --text-scale: 1;
+}
+
+/* Light theme overrides — applied when ThemeContext adds .light to <html> */
+.light {
+  color-scheme: light;
+  --background: 0 0% 100%;
+  --foreground: 240 10% 9%;
+  --card: 0 0% 100%;
+  --primary: 276 88% 55%;
+  --primary-foreground: 0 0% 100%;
+  --accent: 186 80% 42%;
+  --secondary: 240 5% 96%;
+  --muted: 240 5% 96%;
+  --muted-foreground: 240 4% 42%;
+  --border: 240 6% 88%;
+  --input: 240 6% 94%;
+  --ring: 276 88% 55%;
+  --positive: 151 65% 38%;
+  --negative: 0 72% 48%;
+  --warning: 38 92% 45%;
+}
+
+/* Interface size scales — applied when ThemeContext adds .compact/.comfortable/.spacious to <html> */
+.compact { --text-scale: 0.875; }
+.comfortable { --text-scale: 1; }
+.spacious { --text-scale: 1.125; }
+
+html { font-size: calc(16px * var(--text-scale)); }
+
+* { box-sizing: border-box; }
+html, body { min-height: 100%; overflow-x: hidden; }
+body {
+  margin: 0;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: Arial, Helvetica, sans-serif;
+}
+button, input, textarea { font: inherit; }
+
+@media (max-width: 767px) {
+  button { min-height: 44px; touch-action: manipulation; }
+  input:not([type="checkbox"]):not([type="radio"]), select { min-height: 44px; }
+}
+
+.card-elevated {
+  border: 1px solid hsl(var(--border));
+  border-radius: 1.1rem;
+  background: hsl(var(--card));
+}
+.text-accent { color: hsl(var(--accent)); }
+.bg-accent { background-color: hsl(var(--accent)); }
+.border-accent { border-color: hsl(var(--accent)); }
+.accent-glow { box-shadow: 0 0 34px hsl(var(--primary) / 0.08); }
+.font-mono-data { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.animate-slide-up { animation: slide-up 240ms ease-out both; }
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
