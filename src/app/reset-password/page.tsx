@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { Suspense } from "react";
 import ResetPasswordForm from "./ResetPasswordForm";
 import AuthBrandPanel from "@/app/sign-up-login-screen/components/AuthBrandPanel";
 
@@ -24,7 +24,9 @@ export default function ResetPasswordPage() {
           </div>
 
           <div className="animate-slide-up">
-            <ResetPasswordForm />
+            <Suspense fallback={<div className="min-h-64" aria-label="Loading password reset form" />}>
+              <ResetPasswordForm />
+            </Suspense>
           </div>
         </div>
       </div>
