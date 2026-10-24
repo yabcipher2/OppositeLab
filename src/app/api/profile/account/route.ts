@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
       db.collection("passwordResets").deleteMany({ userId }),
       db.collection("matchRequests").deleteMany({ $or: [{ requesterId: userId }, { recipientId: userId }] }),
       db.collection("communityMemberships").deleteMany({ userId }),
-      db.collection("milestones").updateMany({ memberIds: userId }, { $pull: { memberIds: userId } }),
+      db.collection<{ memberIds?: string[] } & import("mongodb").Document>("milestones").updateMany({ memberIds: userId }, { $pull: { memberIds: userId } as never }),
       db.collection("projects").updateMany({ createdBy: userId }, { $unset: { createdBy: "" } }),
       db.collection("communityMessages").updateMany({ authorId: userId }, { $set: { authorId: "deleted-user", authorName: "Deleted user" } }),
       db.collection("workspaceActivity").updateMany({ actorId: userId }, { $set: { actorId: "deleted-user", actorName: "Deleted user" } }),

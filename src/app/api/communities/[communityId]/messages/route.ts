@@ -7,6 +7,12 @@ import { handleApiError } from "@/lib/server/http";
 export const runtime = "nodejs";
 type Context = { params: Promise<{ communityId: string }> };
 type MessageAttachment = { name: string; type: string; dataUrl: string };
+type CommunityMessageDocument = {
+  _id: ObjectId;
+  communityId: string;
+  reactions?: Array<{ emoji: string; userIds: string[] }>;
+};
+type CommunityDocument = { _id: ObjectId; pinnedMessageIds?: string[]; pinnedMessageId?: string };
 
 async function isMember(request: NextRequest, communityId: string) {
   const user = await currentUser(request);
@@ -176,13 +182,13 @@ export async function PATCH(request: NextRequest, context: Context) {
       if (!["👍", "❤️", "🔥", "🚀"].includes(emoji)) return NextResponse.json({ error: "Choose a supported reaction." }, { status: 400 });
       const existingReaction = message.reactions?.find((reaction: { emoji: string }) => reaction.emoji === emoji);
       if (existingReaction?.userIds?.includes(userId)) {
-        await db.collection("communityMessages").updateOne({ _id: messageId, communityId }, { $pull: { "reactions.$[reaction].userIds": userId } }, { arrayFilters: [{ "reaction.emoji": emoji }] });
+        await db.collection<CommunityMessageDocument>("communityMessages").updateOne({ _id: messageId, communityId }, { $pull: { "reactions.$[reaction].userIds": userId } }, { arrayFilters: [{ "reaction.emoji": emoji }] });
       } else {
-        await db.collection("communityMessages").updateOne(
+        await db.collection<CommunityMessageDocument>("communityMessages").updateOne(
           { _id: messageId, communityId, "reactions.emoji": emoji },
           { $addToSet: { "reactions.$.userIds": userId } },
         ).then(async (result) => {
-          if (!result.matchedCount) await db.collection("communityMessages").updateOne({ _id: messageId, communityId }, { $push: { reactions: { emoji, userIds: [userId] } } });
+          if (!result.matchedCount) await db.collection<CommunityMessageDocument>("communityMessages").updateOne({ _id: messageId, communityId }, { $push: { reactions: { emoji, userIds: [userId] } } });
         });
       }
       return NextResponse.json({ updated: true });
@@ -190,7 +196,7 @@ export async function PATCH(request: NextRequest, context: Context) {
     if (body.action === "delete") {
       if (!isAuthor && !isOwner && !isAdmin) return NextResponse.json({ error: "Only the sender, owner, or an admin can delete this message." }, { status: 403 });
       await db.collection("communityMessages").deleteOne({ _id: messageId, communityId });
-      await db.collection("communities").updateOne(
+      await db.collection<CommunityDocument>("communities").updateOne(
         { _id: new ObjectId(communityId) },
         { $pull: { pinnedMessageIds: body.messageId }, $unset: { ...(access.community.pinnedMessageId === body.messageId ? { pinnedMessageId: "" } : {}) } },
       );

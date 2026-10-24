@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 
 type Nomination = {
   id: string; projectId: string; title: string; content: string; members: Array<{ id: string; name: string }>;
-  nominatedBy: string; createdAt: string; status: "pending" | "approved";
+  nominatedBy: string; createdAt: string; status: "pending" | "approved" | "rejected";
   milestones: Array<{ title: string; completed: boolean }>; contribution: { first: number; second: number };
   signoffs: Array<{ id: string; name: string; signed: boolean }>;
   eligibility: { eligible: boolean; reason: string | null; wordCount: number; resonancePoint: string };
