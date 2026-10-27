@@ -1,0 +1,40 @@
+{
+  "name": "OppositeLab — Collaborate With Your Creative Opposite",
+  "short_name": "OppositeLab",
+  "description": "OppositeLab pairs creators with their mathematical opposite and finds the one shared obsession that sparks breakthrough ideas neither could build alone.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#09090b",
+  "theme_color": "#09090b",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icons/oppositelab-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/oppositelab-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "collaboration", "social"],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "New Collaboration",
+      "short_name": "Collaborate",
+      "description": "Start a new collaboration session",
+      "url": "/dashboard?action=new",
+      "icons": [
+        {
+          "src": "/icons/oppositelab-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ]
+}

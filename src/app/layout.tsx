@@ -5,6 +5,7 @@ import "../styles/tailwind.css";
 import "@livekit/components-styles";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import PWAInstaller from "@/components/PWAInstaller";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -21,6 +22,7 @@ export const metadata: Metadata = {
     apple: [{ url: "/icons/oppositelab-180.png", sizes: "180x180", type: "image/png" }],
   },
   appleWebApp: { capable: true, title: "OppositeLab", statusBarStyle: "black-translucent" },
+  manifest: "/manifest.json",
 };
 
 export default function RootLayout({
@@ -32,6 +34,7 @@ export default function RootLayout({
         <ThemeProvider>
           <AuthProvider>{children}</AuthProvider>
         </ThemeProvider>
+        <PWAInstaller />
 
         <script
           type="module"

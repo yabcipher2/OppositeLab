@@ -24,3 +24,27 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Capacitor
+out/
+ios/
+android/
+.capacitor/
+
+# Capacitor Signing Keys (CRITICAL - NEVER COMMIT)
+*.keystore
+*.jks
+android/key.properties
+android/app/release/
+ios/App/App/GoogleService-Info.plist
+
+# PWA
+public/sw.js.map
+public/workbox-*.js
+public/workbox-*.js.map
+
+# Environment files with secrets (CRITICAL - NEVER COMMIT)
+.env.local
+.env.production.local
+.env.development.local
+.env.test.local

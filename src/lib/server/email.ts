@@ -45,6 +45,37 @@ export async function sendEmail({ to, subject, html, text }: EmailOptions) {
     return;
   }
 
+  if (emailProvider === "brevo") {
+    const emailFrom = process.env.EMAIL_FROM ?? "noreply@oppositelab.app";
+    const senderEmail = emailFrom.match(/<(.+)>/)?.[1] || emailFrom;
+    const senderName = emailFrom.match(/(.+?)\s*</)?.[1]?.trim() || "OppositeLab";
+
+    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+      method: "POST",
+      headers: {
+        "accept": "application/json",
+        "api-key": process.env.BREVO_API_KEY ?? "",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        sender: {
+          email: senderEmail,
+          name: senderName,
+        },
+        to: [{ email: to }],
+        subject,
+        htmlContent: html,
+        textContent: text || html.replace(/<[^>]*>/g, ""),
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(`Brevo error: ${JSON.stringify(error)}`);
+    }
+    return;
+  }
+
   throw new Error(`Unknown email provider: ${emailProvider}`);
 }
 
