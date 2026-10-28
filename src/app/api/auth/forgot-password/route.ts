@@ -21,6 +21,7 @@ export async function POST(request: NextRequest) {
     const user = await db.collection("users").findOne({ email }, { projection: { _id: 1, name: 1, email: 1 } });
 
     if (!user) {
+      // Still return success to prevent email enumeration
       return NextResponse.json({ message: "If an account exists, a reset link has been sent." });
     }
 
@@ -35,10 +36,18 @@ export async function POST(request: NextRequest) {
       createdAt: new Date(),
     });
 
-    await sendPasswordResetEmail(user.email, user.name, token);
+    try {
+      await sendPasswordResetEmail(user.email, user.name, token);
+    } catch (emailError) {
+      console.error("Error sending password reset email:", emailError);
+      // Delete the reset token if email fails
+      await db.collection("passwordResets").deleteOne({ tokenHash });
+      return NextResponse.json({ error: "Failed to send reset email. Please try again later." }, { status: 500 });
+    }
 
     return NextResponse.json({ message: "If an account exists, a reset link has been sent." });
   } catch (error) {
+    console.error("Forgot password error:", error);
     return handleApiError(error);
   }
 }
