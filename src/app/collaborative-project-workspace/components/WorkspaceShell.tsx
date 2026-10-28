@@ -3,6 +3,7 @@
 import React, { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Icon from "@/components/ui/AppIcon";
 import { LiveKitCall } from "@/components/LiveKitCall";
+import { ImageViewerModal } from "@/components/ImageViewerModal";
 
 type Collaborator = { id: string; name: string; role: string; photo?: string };
 type Activity = { id: string; actorId: string; actorName: string; kind: string; createdAt: string };
@@ -43,7 +44,7 @@ function renderInlineFormatting(value: string) {
   });
 }
 
-function renderDocument(content: string) {
+function renderDocument(content: string, onImageClick?: (url: string, name: string) => void) {
   let offset = 0;
   let inCodeBlock = false;
   return content.split("\n").map((line, index) => {
@@ -61,7 +62,7 @@ function renderDocument(content: string) {
     }
     if (!line.trim()) return <div key={index} className="h-4" aria-hidden="true" />;
     const image = /^!\[([^\]]*)\]\((\/api\/workspace\/attachments\?id=[a-f\d]{24})\)$/.exec(line.trim());
-    if (image) return <p key={index} className="my-3"><img src={image[2]} alt={image[1]} className="max-h-96 max-w-full rounded-xl object-contain" /></p>;
+    if (image) return <p key={index} className="my-3"><button type="button" onClick={() => onImageClick?.(image[2], image[1])} className="block"><img src={image[2]} alt={image[1]} className="max-h-96 max-w-full rounded-xl object-contain cursor-pointer hover:opacity-90 transition-opacity" /></button></p>;
     const link = /^\[([^\]]+)\]\((\/api\/workspace\/attachments\?id=[a-f\d]{24})\)$/.exec(line.trim());
     if (link) return <p key={index} className="text-lg leading-8"><a href={link[2]} className="text-primary underline" download>{link[1]}</a></p>;
     if (/^[-*]\s+/.test(line.trim())) return <p key={index} className="ml-5 text-lg leading-8 text-foreground">• {renderInlineFormatting(line.trim().slice(2))}</p>;
@@ -173,6 +174,8 @@ export default function WorkspaceShell() {
   const [selectedText, setSelectedText] = useState("");
   const [selectionNotice, setSelectionNotice] = useState("");
   const [callOpen, setCallOpen] = useState(false);
+  const [imageViewerOpen, setImageViewerOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<{ url: string; name: string } | null>(null);
   const cursorTimerRef = useRef<number | null>(null);
   const attachmentInputRef = useRef<HTMLInputElement>(null);
   const editorRef = useRef<HTMLTextAreaElement>(null);
@@ -777,7 +780,7 @@ export default function WorkspaceShell() {
             {editing ? <div className="relative">
               {selectedText && <div className="absolute -top-11 left-4 z-20 flex gap-1 rounded-xl border border-border bg-card p-1 shadow-lg"><button type="button" onClick={() => void submitSelectionAction("comment")} className="rounded-lg px-2 py-1 text-xs font-semibold hover:bg-secondary">Comment</button><button type="button" onClick={() => void submitSelectionAction("suggestion")} className="rounded-lg px-2 py-1 text-xs font-semibold hover:bg-secondary">Suggest Edit</button><button type="button" onClick={() => void submitSelectionAction("dissonant")} className="rounded-lg px-2 py-1 text-xs font-semibold text-negative hover:bg-negative/10">Mark as Dissonant</button></div>}
               <textarea ref={editorRef} id="shared-document" value={content} onChange={(event) => { setContent(event.target.value); publishCursor(event.currentTarget.selectionStart, true); }} onSelect={(event) => updateSelection(event.currentTarget)} onKeyUp={(event) => updateSelection(event.currentTarget)} onClick={(event) => updateSelection(event.currentTarget)} onBlur={() => publishCursor(editorRef.current?.selectionStart ?? 0, false)} maxLength={200000} placeholder="Write your shared project here. Use Markdown headings (#, ##, ###) to organize sections and build the project outline." className="min-h-[58vh] w-full resize-y border-l-2 border-primary/70 bg-transparent px-5 py-6 text-base leading-8 text-foreground outline-none placeholder:text-muted-foreground/70 focus:bg-card/20 sm:px-7 sm:text-lg" />
-            </div> : <article id="shared-document" className="min-h-[58vh] space-y-4 border-l-2 border-primary/70 px-5 py-6 sm:px-7">{content.trim() ? renderDocument(content) : <div className="py-10 text-center text-sm text-muted-foreground">This project document is empty. <button type="button" onClick={() => setEditing(true)} className="font-semibold text-primary hover:underline">Start writing</button></div>}</article>}
+            </div> : <article id="shared-document" className="min-h-[58vh] space-y-4 border-l-2 border-primary/70 px-5 py-6 sm:px-7">{content.trim() ? renderDocument(content, (url, name) => { setSelectedImage({ url, name }); setImageViewerOpen(true); }) : <div className="py-10 text-center text-sm text-muted-foreground">This project document is empty. <button type="button" onClick={() => setEditing(true)} className="font-semibold text-primary hover:underline">Start writing</button></div>}</article>}
             {selectionNotice && <p role="status" className="mt-2 text-xs text-positive">{selectionNotice}</p>}
             <div className="flex items-center justify-between border-t border-border py-3 text-xs text-muted-foreground"><span>{wordCount.toLocaleString()} words</span><span>{content.length.toLocaleString()} / 200,000 characters</span></div>
           </div>
@@ -831,6 +834,15 @@ export default function WorkspaceShell() {
           </div>
         </aside>
       </div>
+      <ImageViewerModal
+        imageUrl={selectedImage?.url ?? ""}
+        imageName={selectedImage?.name ?? ""}
+        isOpen={imageViewerOpen}
+        onClose={() => {
+          setImageViewerOpen(false);
+          setSelectedImage(null);
+        }}
+      />
     </main>
   );
 }

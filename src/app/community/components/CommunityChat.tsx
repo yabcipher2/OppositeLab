@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { LiveKitCall } from "@/components/LiveKitCall";
+import { ImageViewerModal } from "@/components/ImageViewerModal";
 
 export interface Community { id: string; name: string; category: string; description: string; visibility?: "public" | "private"; members: number; joined: boolean; creator: boolean; unreadCount?: number }
 interface ChatAttachment { name: string; type: string; url: string }
@@ -63,6 +64,8 @@ export function CommunityChat({ community, onCommunityUpdated }: { community: Co
   const [editCategory, setEditCategory] = useState(community.category);
   const [editDescription, setEditDescription] = useState(community.description);
   const [editVisibility, setEditVisibility] = useState<"public" | "private">(community.visibility ?? "public");
+  const [imageViewerOpen, setImageViewerOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<{ url: string; name: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const recordingStreamRef = useRef<MediaStream | null>(null);
@@ -350,7 +353,7 @@ export function CommunityChat({ community, onCommunityUpdated }: { community: Co
             {message.text && (editingMessageId === message.id
               ? <form onSubmit={(event) => { event.preventDefault(); void updateMessage(message.id, "edit", { text: editMessageText }); }} className="mt-1 space-y-2"><textarea value={editMessageText} maxLength={2000} onChange={(event) => setEditMessageText(event.target.value)} className="w-full rounded border border-border bg-background p-2 text-sm" /><span className="flex gap-2"><button className="rounded bg-primary px-2 py-1 text-xs text-primary-foreground">Save edit</button><button type="button" onClick={() => setEditingMessageId("")} className="rounded border border-border px-2 py-1 text-xs">Cancel</button></span></form>
               : <FormattedMessage text={message.text} />)}
-            {message.attachments?.map((attachment, index) => <div key={`${attachment.name}-${index}`} className="mt-2"><p className="mb-1 break-all text-xs text-muted-foreground">{attachment.name}</p>{attachment.type.startsWith("image/") && attachment.type !== "image/svg+xml" ? <a href={attachment.url} target="_blank" rel="noreferrer"><img src={attachment.url} alt={attachment.name} className="max-h-56 max-w-full rounded-lg object-contain" /></a> : attachment.type.startsWith("video/") ? <video controls preload="metadata" src={attachment.url} className="max-h-56 max-w-full rounded-lg" /> : attachment.type.startsWith("audio/") ? <audio controls preload="metadata" src={attachment.url} className="max-w-full" /> : <a href={attachment.url} download={attachment.name} className="text-sm font-medium text-primary underline">Download file</a>}</div>)}
+            {message.attachments?.map((attachment, index) => <div key={`${attachment.name}-${index}`} className="mt-2"><p className="mb-1 break-all text-xs text-muted-foreground">{attachment.name}</p>{attachment.type.startsWith("image/") && attachment.type !== "image/svg+xml" ? <button type="button" onClick={() => { setSelectedImage({ url: attachment.url, name: attachment.name }); setImageViewerOpen(true); }} className="block"><img src={attachment.url} alt={attachment.name} className="max-h-56 max-w-full rounded-lg object-contain cursor-pointer hover:opacity-90 transition-opacity" /></button> : attachment.type.startsWith("video/") ? <video controls preload="metadata" src={attachment.url} className="max-h-56 max-w-full rounded-lg" /> : attachment.type.startsWith("audio/") ? <audio controls preload="metadata" src={attachment.url} className="max-w-full" /> : <a href={attachment.url} download={attachment.name} className="text-sm font-medium text-primary underline">Download file</a>}</div>)}
             {message.editedAt && <span className="ml-1 text-[10px] italic text-muted-foreground">(edited)</span>}
             {(message.reactions?.length ?? 0) > 0 && <div className="mt-1 flex flex-wrap gap-1">{message.reactions?.filter((reaction) => reaction.userIds.length).map((reaction) => <button key={reaction.emoji} type="button" onClick={() => void updateMessage(message.id, "react", { emoji: reaction.emoji })} className={`min-h-9 rounded-full border px-2 py-0.5 text-xs ${reaction.userIds.includes(currentUserId) ? "border-primary bg-primary/10" : "border-border bg-background"}`}>{reaction.emoji} {reaction.userIds.length}</button>)}</div>}
             <time className="mt-1 block text-right text-[10px] text-muted-foreground">{new Date(message.createdAt).toLocaleString()}{message.authorId === currentUserId && <span className="ml-1" title={message.readBy?.some((id) => id !== currentUserId) ? "Read" : "Sent"}>{message.readBy?.some((id) => id !== currentUserId) ? "✓✓" : "✓"}</span>}</time>
@@ -401,5 +404,14 @@ export function CommunityChat({ community, onCommunityUpdated }: { community: Co
     {showPins && <div role="dialog" aria-modal="true" aria-labelledby="pinned-messages-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"><div className="max-h-[80vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-border bg-card p-5 shadow-xl"><div className="mb-4 flex items-center justify-between"><h3 id="pinned-messages-title" className="font-semibold">Pinned messages</h3><button type="button" onClick={() => setShowPins(false)} aria-label="Close pinned messages" className="rounded border border-border px-2 py-1">✕</button></div>{pinnedMessages.map((message) => <button key={message.id} type="button" onClick={() => { setShowPins(false); document.getElementById(`message-${message.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" }); }} className="mb-2 block w-full rounded-lg border border-border p-3 text-left hover:bg-secondary"><p className="text-xs font-semibold">{message.authorName}</p><p className="mt-1 line-clamp-3 text-sm">{message.text || message.attachments?.map((item) => item.name).join(", ") || "Attachment"}</p></button>)}</div></div>}
     {showInfo && <div role="dialog" aria-modal="true" aria-labelledby="channel-info-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"><div className="w-full max-w-md rounded-2xl border border-border bg-card p-5 shadow-xl"><div className="mb-4 flex items-center justify-between"><h3 id="channel-info-title" className="font-semibold">Channel information</h3><button type="button" onClick={() => setShowInfo(false)} aria-label="Close channel information" className="rounded border border-border px-2 py-1">✕</button></div><p className="font-medium">{community.name}</p><p className="mt-1 text-sm text-muted-foreground">{community.category} · {members.length} members</p><p className="mt-3 whitespace-pre-wrap text-sm">{community.description}</p><p className="mt-3 text-xs text-muted-foreground">{muted ? "Notifications are muted for you." : "Notifications are enabled for you."}</p></div></div>}
   {callOpen && <LiveKitCall type="community" resourceId={community.id} title={`${community.name} community call`} onClose={() => setCallOpen(false)} />}
+  <ImageViewerModal
+    imageUrl={selectedImage?.url ?? ""}
+    imageName={selectedImage?.name ?? ""}
+    isOpen={imageViewerOpen}
+    onClose={() => {
+      setImageViewerOpen(false);
+      setSelectedImage(null);
+    }}
+  />
   </section>;
 }
