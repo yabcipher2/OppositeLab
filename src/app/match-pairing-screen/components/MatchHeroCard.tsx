@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { ImageViewerModal } from "@/components/ImageViewerModal";
 
 type Profile = {
   name: string;
@@ -39,9 +40,11 @@ function initials(name?: string) {
 function ProfileColumn({
   profile,
   isCurrentUser = false,
+  onPhotoClick,
 }: {
   profile: Profile;
   isCurrentUser?: boolean;
+  onPhotoClick?: () => void;
 }) {
   const sliderRows = [
     { key: "wv-order", label: "Structure" },
@@ -63,7 +66,9 @@ function ProfileColumn({
           aria-label={profile.photo ? undefined : `${profile.name} initials`}
         >
           {profile.photo ? (
-            <img src={profile.photo} alt={`${profile.name}'s profile`} className="absolute inset-0 block h-full w-full object-cover" />
+            <button type="button" onClick={onPhotoClick} className="absolute inset-0 h-full w-full p-0">
+              <img src={profile.photo} alt={`${profile.name}'s profile`} className="h-full w-full object-cover cursor-pointer hover:opacity-90 transition-opacity" />
+            </button>
           ) : initials(profile.name)}
         </div>
         <div className="min-w-0">
@@ -115,6 +120,8 @@ export default function MatchHeroCard() {
   const [savesPerDay, setSavesPerDay] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [imageViewerOpen, setImageViewerOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<{ url: string; name: string } | null>(null);
 
   useEffect(() => {
     const syncSelectedMatch = () => {
@@ -191,7 +198,12 @@ export default function MatchHeroCard() {
         </div>
 
         <div className="grid items-start gap-9 xl:grid-cols-[minmax(0,1fr)_260px_minmax(0,1fr)] xl:items-center xl:gap-8">
-          <ProfileColumn profile={currentProfile || { name: "Your profile", roleLabel: "Complete onboarding to get started" }} isCurrentUser />
+          <ProfileColumn profile={currentProfile || { name: "Your profile", roleLabel: "Complete onboarding to get started" }} isCurrentUser onPhotoClick={() => {
+            if (currentProfile?.photo) {
+              setSelectedImage({ url: currentProfile.photo, name: `${currentProfile.name}'s profile photo` });
+              setImageViewerOpen(true);
+            }
+          }} />
 
           <div className="flex flex-col items-center text-center">
             <div className="grid h-[154px] w-[154px] place-items-center rounded-full bg-secondary p-[10px]" aria-label="Divergence score unavailable until you have a match">
@@ -265,7 +277,12 @@ export default function MatchHeroCard() {
       </div>
 
       <div className="grid items-start gap-9 xl:grid-cols-[minmax(0,1fr)_260px_minmax(0,1fr)] xl:items-center xl:gap-8">
-        <ProfileColumn profile={leftProfile} isCurrentUser />
+        <ProfileColumn profile={leftProfile} isCurrentUser onPhotoClick={() => {
+          if (leftProfile.photo) {
+            setSelectedImage({ url: leftProfile.photo, name: `${leftProfile.name}'s profile photo` });
+            setImageViewerOpen(true);
+          }
+        }} />
 
         <div className="flex flex-col items-center text-center">
           <div
@@ -285,7 +302,12 @@ export default function MatchHeroCard() {
           <p className="mt-5 text-sm text-muted-foreground">{activeDays === null ? "Pairing active" : `${activeDays} ${activeDays === 1 ? "day" : "days"} active`}</p>
         </div>
 
-        <ProfileColumn profile={rightProfile} />
+        <ProfileColumn profile={rightProfile} onPhotoClick={() => {
+          if (rightProfile.photo) {
+            setSelectedImage({ url: rightProfile.photo, name: `${rightProfile.name}'s profile photo` });
+            setImageViewerOpen(true);
+          }
+        }} />
       </div>
 
       <div className="mt-9 grid gap-4 border-t border-border pt-6 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center">
@@ -306,6 +328,15 @@ export default function MatchHeroCard() {
           <p className="text-xs text-muted-foreground">project milestone</p>
         </div>
       </div>
+      <ImageViewerModal
+        imageUrl={selectedImage?.url ?? ""}
+        imageName={selectedImage?.name ?? ""}
+        isOpen={imageViewerOpen}
+        onClose={() => {
+          setImageViewerOpen(false);
+          setSelectedImage(null);
+        }}
+      />
     </section>
   );
 }
