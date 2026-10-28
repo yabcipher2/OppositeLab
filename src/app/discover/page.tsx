@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import AppLayout from "@/components/AppLayout";
 import Icon from "@/components/ui/AppIcon";
+import { ImageViewerModal } from "@/components/ImageViewerModal";
 
 interface Creator {
   id: string;
@@ -64,6 +65,8 @@ export default function DiscoverPage() {
     [],
   );
   const [respondingRequestIds, setRespondingRequestIds] = useState<string[]>([]);
+  const [imageViewerOpen, setImageViewerOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<{ url: string; name: string } | null>(null);
 
   useEffect(() => {
     const initialSearch = new URLSearchParams(window.location.search).get("search");
@@ -390,10 +393,10 @@ export default function DiscoverPage() {
                     className="flex flex-col rounded-2xl border border-border bg-card p-5 sm:p-6"
                   >
                     <div className="flex flex-1 items-stretch gap-4">
-                      <button type="button" onClick={() => setSelectedCreator(creator)} aria-label={`View ${creator.name}'s profile`} className="relative h-12 w-12 shrink-0 self-start overflow-hidden rounded-full bg-primary/15 font-bold text-primary ring-offset-2 hover:ring-2 hover:ring-primary">
-                        {creator.photo ? <img src={creator.photo} alt={`${creator.name}'s profile`} className="h-full w-full object-cover" /> : <span className="flex h-full w-full items-center justify-center">{creator.initials}</span>}
+                      <div className="relative h-12 w-12 shrink-0 self-start overflow-hidden rounded-full bg-primary/15 font-bold text-primary">
+                        {creator.photo ? <button type="button" onClick={(e) => { e.stopPropagation(); setSelectedImage({ url: creator.photo!, name: `${creator.name}'s profile photo` }); setImageViewerOpen(true); }} className="h-full w-full"><img src={creator.photo} alt={`${creator.name}'s profile`} className="h-full w-full object-cover cursor-pointer hover:opacity-90 transition-opacity" /></button> : <button type="button" onClick={() => setSelectedCreator(creator)} aria-label={`View ${creator.name}'s profile`} className="flex h-full w-full items-center justify-center ring-offset-2 hover:ring-2 hover:ring-primary rounded-full"><span>{creator.initials}</span></button>}
                         {creator.isOnline && <span className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 border-card bg-positive" title="Online now" />}
-                      </button>
+                      </div>
                       <div className="flex min-w-0 flex-1 flex-col">
                         <div className="flex flex-wrap items-center justify-between gap-3">
                           <div>
@@ -505,7 +508,7 @@ export default function DiscoverPage() {
                 <header className="flex items-start justify-between gap-4">
                   <div className="flex min-w-0 items-center gap-4">
                     <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full bg-primary/15 text-lg font-bold text-primary">
-                      {selectedCreator.photo ? <img src={selectedCreator.photo} alt={`${selectedCreator.name}'s profile`} className="h-full w-full object-cover" /> : <span className="flex h-full w-full items-center justify-center">{selectedCreator.initials}</span>}
+                      {selectedCreator.photo ? <button type="button" onClick={(e) => { e.stopPropagation(); setSelectedImage({ url: selectedCreator.photo!, name: `${selectedCreator.name}'s profile photo` }); setImageViewerOpen(true); }} className="h-full w-full"><img src={selectedCreator.photo} alt={`${selectedCreator.name}'s profile`} className="h-full w-full object-cover cursor-pointer hover:opacity-90 transition-opacity" /></button> : <span className="flex h-full w-full items-center justify-center">{selectedCreator.initials}</span>}
                       {selectedCreator.isOnline && <span className="absolute bottom-0 right-0 h-4 w-4 rounded-full border-2 border-card bg-positive" />}
                     </div>
                     <div className="min-w-0">
@@ -543,6 +546,15 @@ export default function DiscoverPage() {
           )}
         </div>
       </main>
+      <ImageViewerModal
+        imageUrl={selectedImage?.url ?? ""}
+        imageName={selectedImage?.name ?? ""}
+        isOpen={imageViewerOpen}
+        onClose={() => {
+          setImageViewerOpen(false);
+          setSelectedImage(null);
+        }}
+      />
     </AppLayout>
   );
 }

@@ -5,6 +5,7 @@ import Link from "next/link";
 import AppLayout from "@/components/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { interestLabel } from "@/lib/interest-catalog";
+import { ImageViewerModal } from "@/components/ImageViewerModal";
 
 type Profile = { name: string; role: string; location: string; bio: string; interests: string[]; portfolioUrl: string; githubUrl: string; socialUrl: string };
 type SavedProfile = Omit<Partial<Profile>, "interests"> & { roleLabel?: string; photo?: string | null; interests?: string[] | string };
@@ -30,6 +31,8 @@ function displayInterest(value: string) {
 export default function ProfilePage() {
   const [profile, setProfile] = useState(defaultProfile);
   const [photo, setPhoto] = useState<string | null>(null);
+  const [imageViewerOpen, setImageViewerOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<{ url: string; name: string } | null>(null);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -212,7 +215,7 @@ export default function ProfilePage() {
               <p className="mt-1 text-xs text-muted-foreground">Choose a JPG, PNG, WebP, or GIF up to 4 MB.</p>
               <div className="mt-3 flex items-center gap-4">
                 <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-secondary text-xl font-semibold text-muted-foreground" aria-label={photo ? "Selected profile photo preview" : "No profile photo selected"}>
-                  {photo ? <img src={photo} alt="Profile photo preview" className="h-full w-full object-cover" /> : profile.name.trim().slice(0, 1).toUpperCase() || "?"}
+                  {photo ? <button type="button" onClick={() => { setSelectedImage({ url: photo, name: "Your profile photo" }); setImageViewerOpen(true); }} className="h-full w-full"><img src={photo} alt="Profile photo preview" className="h-full w-full object-cover cursor-pointer hover:opacity-90 transition-opacity" /></button> : profile.name.trim().slice(0, 1).toUpperCase() || "?"}
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <input
@@ -247,6 +250,15 @@ export default function ProfilePage() {
           ) : tab === "security" ? <div className="space-y-5 rounded-2xl border border-border bg-card p-5 sm:p-7"><section><h2 className="text-lg font-semibold text-foreground">Account &amp; Security</h2><label className="mt-4 block text-sm font-medium text-foreground">Email address<input readOnly value={user?.email ?? ""} className={`${inputClass} cursor-not-allowed opacity-75`} /></label><p className="mt-1 text-xs text-muted-foreground">Contact support to change your account email.</p></section><form onSubmit={changePassword} className="space-y-4 border-t border-border pt-5"><h3 className="font-semibold text-foreground">Change password</h3><label className="block text-sm font-medium text-foreground">Current password<input required type="password" autoComplete="current-password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} className={inputClass} /></label><label className="block text-sm font-medium text-foreground">New password<input required type="password" minLength={10} maxLength={128} autoComplete="new-password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} className={inputClass} /><span className="mt-1 block text-xs font-normal text-muted-foreground">Use at least 10 characters.</span></label><div className="flex justify-end"><button type="submit" disabled={passwordSaving} className="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-60">{passwordSaving ? "Updating…" : "Update password"}</button></div></form></div> : <form onSubmit={savePreferences} className="rounded-2xl border border-border bg-card p-5 sm:p-7"><h2 className="text-lg font-semibold text-foreground">Notification Preferences</h2><p className="mt-1 text-sm text-muted-foreground">Choose what appears on your profile and which activity notifications you receive.</p><div className="mt-4 divide-y divide-border">{preferenceOptions.map((option) => <label key={option.key} className="flex cursor-pointer items-center justify-between gap-5 py-4"><span><span className="block text-sm font-medium text-foreground">{option.title}</span><span className="mt-1 block text-xs leading-relaxed text-muted-foreground">{option.description}</span></span><input type="checkbox" checked={preferences[option.key]} onChange={(event) => { setPreferences((current) => ({ ...current, [option.key]: event.target.checked })); setPreferencesSaved(false); }} className="h-5 w-5 shrink-0 accent-primary" /></label>)}</div><div className="mt-5 flex justify-end"><button type="submit" className="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground">Save preferences</button></div></form>}
         </div>
       </main>
+      <ImageViewerModal
+        imageUrl={selectedImage?.url ?? ""}
+        imageName={selectedImage?.name ?? ""}
+        isOpen={imageViewerOpen}
+        onClose={() => {
+          setImageViewerOpen(false);
+          setSelectedImage(null);
+        }}
+      />
     </AppLayout>
   );
 }
