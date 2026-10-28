@@ -16,6 +16,7 @@ export function ImageViewerModal({
   isOpen,
   onClose,
 }: ImageViewerModalProps) {
+  console.log("ImageViewerModal rendered", { isOpen, imageUrl, imageName });
   if (!isOpen) return null;
 
   const handleDownload = async () => {
