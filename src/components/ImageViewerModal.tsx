@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { X, Download } from "lucide-react";
+import { XMarkIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
 
 interface ImageViewerModalProps {
   imageUrl: string;
@@ -61,14 +61,14 @@ export function ImageViewerModal({
             className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
             aria-label="Download image"
           >
-            <Download className="w-5 h-5 text-white" />
+            <ArrowDownTrayIcon className="w-5 h-5 text-white" />
           </button>
           <button
             onClick={onClose}
             className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
             aria-label="Close"
           >
-            <X className="w-5 h-5 text-white" />
+            <XMarkIcon className="w-5 h-5 text-white" />
           </button>
         </div>
       </div>
