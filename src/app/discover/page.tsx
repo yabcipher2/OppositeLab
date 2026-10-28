@@ -64,7 +64,6 @@ export default function DiscoverPage() {
     [],
   );
   const [respondingRequestIds, setRespondingRequestIds] = useState<string[]>([]);
-  const [updatingCreatorIds, setUpdatingCreatorIds] = useState<string[]>([]);
 
   useEffect(() => {
     const initialSearch = new URLSearchParams(window.location.search).get("search");
@@ -200,49 +199,6 @@ export default function DiscoverPage() {
     } finally {
       setRequestingCreatorIds((current) =>
         current.filter((id) => id !== recipientId),
-      );
-    }
-  };
-
-  const excludeCreator = async (
-    creator: Creator,
-    action: "remove" | "block",
-  ) => {
-    setError("");
-    setNotice("");
-    setUpdatingCreatorIds((current) => [...current, creator.id]);
-    try {
-      const response = await fetch("/api/discover/actions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ targetId: creator.id, action }),
-      });
-      const result = await response.json();
-      if (!response.ok)
-        throw new Error(result.error || "Could not update this creator.");
-      setCreators((current) =>
-        current.filter((item) => item.id !== creator.id),
-      );
-      if (action === "block") {
-        setRequestedIds((current) => current.filter((id) => id !== creator.id));
-        setIncomingRequests((current) =>
-          current.filter((item) => item.otherId !== creator.id),
-        );
-        setNotice(
-          `${creator.name} is blocked. You won't see them in Discover or be able to match with them.`,
-        );
-      } else {
-        setNotice(`${creator.name} was removed from your Discover list.`);
-      }
-    } catch (actionError) {
-      setError(
-        actionError instanceof Error
-          ? actionError.message
-          : "Could not update this creator.",
-      );
-    } finally {
-      setUpdatingCreatorIds((current) =>
-        current.filter((id) => id !== creator.id),
       );
     }
   };
@@ -501,32 +457,7 @@ export default function DiscoverPage() {
                           {creator.divergentAxes.length ? <p className="mt-1 text-sm text-foreground">Opposite on: {creator.divergentAxes.map((axis) => axis.label).join(" & ")}</p> : <p className="mt-1 text-xs text-muted-foreground">No strong opposing worldview axes recorded yet.</p>}
                         </div>
                         <div className="mt-auto pt-5">
-                        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-4">
-                          <div className="flex gap-2">
-                            <button
-                              type="button"
-                              disabled={updatingCreatorIds.includes(creator.id)}
-                              onClick={() =>
-                                void excludeCreator(creator, "remove")
-                              }
-                              className="rounded-lg border border-border px-3 py-2 text-sm font-medium text-muted-foreground hover:border-foreground/30 hover:text-foreground disabled:opacity-50"
-                              aria-label={`Remove ${creator.name} from Discover`}
-                            >
-                              {updatingCreatorIds.includes(creator.id)
-                                ? "Updating…"
-                                : "Remove"}
-                            </button>
-                            <button
-                              type="button"
-                              disabled={updatingCreatorIds.includes(creator.id)}
-                              onClick={() =>
-                                void excludeCreator(creator, "block")
-                              }
-                              className="rounded-lg border border-negative/30 px-3 py-2 text-sm font-medium text-negative hover:bg-negative/10 disabled:opacity-50"
-                            >
-                              Block
-                            </button>
-                          </div>
+                        <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border pt-4">
                           {activeMatchId ? (
                             <button
                               type="button"
@@ -538,10 +469,7 @@ export default function DiscoverPage() {
                           ) : (
                             <button
                               type="button"
-                              disabled={
-                                requested ||
-                                updatingCreatorIds.includes(creator.id)
-                              }
+                              disabled={requested}
                               onClick={() => void requestMatch(creator.id)}
                               className={`min-h-11 rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${requested ? "border border-primary/40 bg-primary/10 text-primary" : "bg-primary text-primary-foreground hover:bg-primary/90"}`}
                             >

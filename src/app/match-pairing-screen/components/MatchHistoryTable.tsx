@@ -16,7 +16,7 @@ type Match = {
   divergenceScore?: number;
   healthScore?: number;
   breakthroughIndex?: number;
-  partner: null | { name: string };
+  partner: null | { name: string; id?: string };
 };
 type Project = { id: string; title: string; memberIds?: string[] };
 
@@ -28,6 +28,9 @@ export default function MatchHistoryTable() {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("All");
   const [selectedMatch, setSelectedMatch] = useState<(Match & { projectTitle: string }) | null>(null);
+  const [updatingAction, setUpdatingAction] = useState(false);
+  const [actionError, setActionError] = useState("");
+  const [actionNotice, setActionNotice] = useState("");
   useEffect(() => {
     Promise.all([
       fetch("/api/matches", { cache: "no-store" }).then((response) => response.json()),
@@ -47,6 +50,49 @@ export default function MatchHistoryTable() {
     ...match,
     projectTitle: projects.find((project) => match.memberIds?.every((id) => project.memberIds?.includes(id)))?.title ?? "—",
   })), [matches, projects, query, filter]);
+
+  const excludePartner = async (partnerId: string | undefined, partnerName: string, action: "remove" | "block") => {
+    if (!partnerId) {
+      setActionError("Partner ID not available");
+      return;
+    }
+    
+    setActionError("");
+    setActionNotice("");
+    setUpdatingAction(true);
+    
+    try {
+      const response = await fetch("/api/discover/actions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ targetId: partnerId, action }),
+      });
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.error || `Could not ${action} this partner.`);
+      }
+      
+      if (action === "block") {
+        setActionNotice(`${partnerName} is blocked. You won't see them in Discover or be able to match with them.`);
+      } else {
+        setActionNotice(`${partnerName} was removed from your Discover list.`);
+      }
+      
+      // Close modal after successful action
+      setTimeout(() => {
+        setSelectedMatch(null);
+        setActionNotice("");
+      }, 2000);
+      
+    } catch (error) {
+      setActionError(
+        error instanceof Error ? error.message : `Could not ${action} this partner.`
+      );
+    } finally {
+      setUpdatingAction(false);
+    }
+  };
 
   return (
     <section className="card-elevated overflow-hidden">
@@ -134,18 +180,34 @@ export default function MatchHistoryTable() {
       </div>
       <Modal
         open={Boolean(selectedMatch)}
-        onClose={() => setSelectedMatch(null)}
+        onClose={() => {
+          setSelectedMatch(null);
+          setActionError("");
+          setActionNotice("");
+        }}
         title={selectedMatch ? `Match with ${selectedMatch.partner?.name ?? "partner"}` : "Match details"}
         size="md"
       >
         {selectedMatch && (
           <div className="space-y-5">
+            {actionNotice && (
+              <div className="rounded-lg border border-positive/30 bg-positive/10 px-4 py-3 text-sm text-positive">
+                {actionNotice}
+              </div>
+            )}
+            {actionError && (
+              <div className="rounded-lg border border-negative/30 bg-negative/10 px-4 py-3 text-sm text-negative">
+                {actionError}
+              </div>
+            )}
+            
             <div className="flex items-center justify-between gap-3">
               <span className={`rounded-full border px-3 py-1 text-xs font-medium ${selectedMatch.status === "active" ? "border-positive/30 text-positive" : "border-border text-muted-foreground"}`}>
                 {selectedMatch.status}
               </span>
               <span className="text-sm text-muted-foreground">{new Date(selectedMatch.createdAt).toLocaleDateString()}</span>
             </div>
+            
             <dl className="grid grid-cols-2 gap-x-6 gap-y-4 text-sm">
               <div><dt className="text-muted-foreground">Resonance point</dt><dd className="mt-1 font-medium text-foreground">{selectedMatch.resonancePoint || "Not recorded"}</dd></div>
               <div><dt className="text-muted-foreground">Divergence</dt><dd className="mt-1 font-medium text-foreground">{typeof selectedMatch.divergenceScore === "number" ? `${selectedMatch.divergenceScore}/100` : "Not recorded"}</dd></div>
@@ -153,11 +215,34 @@ export default function MatchHistoryTable() {
               <div><dt className="text-muted-foreground">Breakthrough</dt><dd className="mt-1 font-medium text-foreground">{typeof selectedMatch.breakthroughIndex === "number" ? `${selectedMatch.breakthroughIndex}/100` : "Not recorded"}</dd></div>
               <div className="col-span-2"><dt className="text-muted-foreground">Project</dt><dd className="mt-1 font-medium text-foreground">{selectedMatch.projectTitle === "—" ? "No shared project" : selectedMatch.projectTitle}</dd></div>
             </dl>
-            {selectedMatch.status === "active" && selectedMatch.projectTitle !== "—" && (
-              <Link href="/collaborative-project-workspace" className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:brightness-110">
-                Open workspace <Icon name="ArrowTopRightOnSquareIcon" size={16} />
-              </Link>
-            )}
+            
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  disabled={updatingAction}
+                  onClick={() => excludePartner(selectedMatch.partner?.id, selectedMatch.partner?.name ?? "partner", "remove")}
+                  className="rounded-lg border border-border px-3 py-2 text-sm font-medium text-muted-foreground hover:border-foreground/30 hover:text-foreground disabled:opacity-50"
+                  aria-label={`Remove ${selectedMatch.partner?.name ?? "partner"} from Discover`}
+                >
+                  {updatingAction ? "Updating…" : "Remove"}
+                </button>
+                <button
+                  type="button"
+                  disabled={updatingAction}
+                  onClick={() => excludePartner(selectedMatch.partner?.id, selectedMatch.partner?.name ?? "partner", "block")}
+                  className="rounded-lg border border-negative/30 px-3 py-2 text-sm font-medium text-negative hover:bg-negative/10 disabled:opacity-50"
+                >
+                  Block
+                </button>
+              </div>
+              
+              {selectedMatch.status === "active" && selectedMatch.projectTitle !== "—" && (
+                <Link href="/collaborative-project-workspace" className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:brightness-110">
+                  Open workspace <Icon name="ArrowTopRightOnSquareIcon" size={16} />
+                </Link>
+              )}
+            </div>
           </div>
         )}
       </Modal>
